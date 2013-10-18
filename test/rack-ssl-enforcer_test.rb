@@ -921,6 +921,26 @@ class TestRackSslEnforcer < Test::Unit::TestCase
     end
   end
 
+  context ':only_variables (variable is set)' do
+    setup { mock_app :only_variables => 'rack.version' }
+
+    should 'redirect to HTTPS for env variable' do
+      get 'http://www.example.org/'
+      assert_equal 301, last_response.status
+      assert_equal 'https://www.example.org/', last_response.location
+    end
+  end
+
+  context ':only_variables (variable is not set)' do
+    setup { mock_app :only_variables => 'rack.noneexisting' }
+
+    should 'not redirect for non rack env variable' do
+      get 'http://www.example.org/'
+      assert_equal 200, last_response.status
+      assert_equal 'Hello world!', last_response.body
+    end
+  end
+
   context 'complex example' do
     setup { mock_app :only => '/cart', :ignore => %r{/assets}, :strict => true }
 

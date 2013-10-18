@@ -9,6 +9,7 @@ module Rack
       :agents       => [:only_agents, :except_agents],
       :path         => [:only, :except],
       :methods      => [:only_methods, :except_methods],
+      :variables    => [:only_variables, :except_variables],
       :environments => [:only_environments, :except_environments]
     }
 
@@ -47,7 +48,7 @@ module Rack
 
       if redirect_required?
         call_before_redirect
-        modify_location_and_redirect 
+        modify_location_and_redirect
       elsif ssl_request?
         status, headers, body = @app.call(env)
         flag_cookies_as_secure!(headers) if @options[:force_secure_cookies]
@@ -132,7 +133,7 @@ module Rack
       else
         provided_keys.all? do |key|
           rules = [@options[key]].flatten.compact
-          rules.send([:except_hosts, :except_agents, :except_environments, :except].include?(key) ? :all? : :any?) do |rule|
+          rules.send([:except_hosts, :except_agents, :except_environments, :except_variables, :except].include?(key) ? :all? : :any?) do |rule|
             SslEnforcerConstraint.new(key, rule, @request).matches?
           end
         end

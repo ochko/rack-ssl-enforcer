@@ -35,6 +35,8 @@ private
       ENV["RACK_ENV"] || ENV["RAILS_ENV"] || ENV["ENV"]
     when /agents/
       @request.user_agent
+    when /variables/
+      @request.env[@rule] ? @rule : nil
     else
       @request.path
     end
