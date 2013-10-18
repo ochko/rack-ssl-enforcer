@@ -21,6 +21,7 @@ module Rack
         :redirect_code        => nil,
         :strict               => false,
         :mixed                => false,
+        :join_conditions_with => :and,
         :hsts                 => nil,
         :http_port            => nil,
         :https_port           => nil,
@@ -129,9 +130,9 @@ module Rack
     def enforce_ssl_for?(keys)
       provided_keys = keys.select { |key| @options[key] }
       if provided_keys.empty?
-        true
+        and?
       else
-        provided_keys.all? do |key|
+        provided_keys.send(and? ? :all? : :any?) do |key|
           rules = [@options[key]].flatten.compact
           rules.send([:except_hosts, :except_agents, :except_environments, :except_variables, :except].include?(key) ? :all? : :any?) do |rule|
             SslEnforcerConstraint.new(key, rule, @request).matches?
@@ -145,8 +146,12 @@ module Rack
     end
 
     def enforce_ssl?
-      CONSTRAINTS_BY_TYPE.inject(true) do |memo, (type, keys)|
-        memo && enforce_ssl_for?(keys)
+      CONSTRAINTS_BY_TYPE.inject(and?) do |memo, (type, keys)|
+        if and?
+          memo && enforce_ssl_for?(keys)
+        else
+          memo || enforce_ssl_for?(keys)
+        end
       end
     end
 
@@ -201,5 +206,8 @@ module Rack
       headers.merge!({ 'Strict-Transport-Security' => value })
     end
 
+    def and?
+      @options[:join_conditions_with] == :and
+    end
   end
 end

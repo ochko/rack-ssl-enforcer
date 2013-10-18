@@ -941,6 +941,63 @@ class TestRackSslEnforcer < Test::Unit::TestCase
     end
   end
 
+  context 'conjunction example' do
+    setup { mock_app :only => '/cart', :only_environments => ['production'], :join_conditions_with => :and, :strict => true }
+
+    should 'redirect to HTTPS for /cart in production environment' do
+      ENV["RACK_ENV"] = "production"
+      get 'http://www.example.org/cart'
+      assert_equal 301, last_response.status
+      assert_equal 'https://www.example.org/cart', last_response.location
+    end
+
+    should 'not redirect to HTTPS for /cart in dev environment' do
+      ENV["RACK_ENV"] = "dev"
+      get 'http://www.example.org/cart'
+      assert_equal 200, last_response.status
+      assert_equal 'Hello world!', last_response.body
+    end
+
+    should 'not redirect to HTTPS for /login in production environment' do
+      ENV["RACK_ENV"] = "production"
+      get 'http://www.example.org/login'
+      assert_equal 200, last_response.status
+      assert_equal 'Hello world!', last_response.body
+    end
+  end
+
+  context 'discjunction example' do
+    setup { mock_app :only => '/cart', :only_environments => ['production'], :join_conditions_with => :or, :strict => true }
+
+    should 'redirect to HTTPS for /cart in production environment' do
+      ENV["RACK_ENV"] = "production"
+      get 'http://www.example.org/cart'
+      assert_equal 301, last_response.status
+      assert_equal 'https://www.example.org/cart', last_response.location
+    end
+
+    should 'redirect to HTTPS for /cart in dev environment' do
+      ENV["RACK_ENV"] = "dev"
+      get 'http://www.example.org/cart'
+      assert_equal 301, last_response.status
+      assert_equal 'https://www.example.org/cart', last_response.location
+    end
+
+    should 'redirect to HTTPS for /login in production environment' do
+      ENV["RACK_ENV"] = "production"
+      get 'http://www.example.org/login'
+      assert_equal 301, last_response.status
+      assert_equal 'https://www.example.org/login', last_response.location
+    end
+
+    should 'not redirect to HTTPS for /login in development environment' do
+      ENV["RACK_ENV"] = "development"
+      get 'http://www.example.org/login'
+      assert_equal 200, last_response.status
+      assert_equal 'Hello world!', last_response.body
+    end
+  end
+
   context 'complex example' do
     setup { mock_app :only => '/cart', :ignore => %r{/assets}, :strict => true }
 
